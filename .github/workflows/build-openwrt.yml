@@ -27,7 +27,7 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # استفاده از ساختار بهینه پکیج‌ها برای سرعت بالا و پایداری بیلد
+        # آپدیت ایندکس پکیج‌ها برای اینکه dnsmasq-full بدون ارور پیدا و نصب شود
         make image PROFILE="generic" PACKAGES="-dnsmasq dnsmasq-full kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
 
     - name: Upload Firmware Artifact
