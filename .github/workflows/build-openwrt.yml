@@ -25,8 +25,8 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # حذف wpad-openssl جهت رفع ارور خروج ۲ و حفظ سایر درایورهای وای‌فای و USB
-        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
+        # اصلاح نهایی پکیج‌ها: حذف نسخه معمولی با -dnsmasq و اضافه کردن نسخه کامل dnsmasq-full
+        make image PROFILE="generic" PACKAGES="-dnsmasq dnsmasq-full kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
