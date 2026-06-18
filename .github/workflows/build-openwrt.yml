@@ -11,6 +11,11 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Install Build Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc rsync unzip qemu-utils
+        
     - name: Download OpenWrt Image Builder
       run: |
         curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.xz" -o openwrt-imagebuilder.tar.xz
@@ -19,13 +24,14 @@ jobs:
 
     - name: Copy Custom Files
       run: |
-        cp -r files/ imagebuilder/
-        chmod +x imagebuilder/files/etc/uci-defaults/99-custom-settings
+        if [ -d "files" ]; then
+          cp -r files/ imagebuilder/
+          chmod +x imagebuilder/files/etc/uci-defaults/99-custom-settings || true
+        fi
 
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # اصلاح نهایی پکیج‌ها: حذف نسخه معمولی با -dnsmasq و اضافه کردن نسخه کامل dnsmasq-full
         make image PROFILE="generic" PACKAGES="-dnsmasq dnsmasq-full kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
 
     - name: Upload Firmware Artifact
