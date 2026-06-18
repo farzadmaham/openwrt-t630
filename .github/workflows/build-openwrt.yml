@@ -13,8 +13,11 @@ jobs:
         
     - name: Download OpenWrt Image Builder
       run: |
-        curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.xz" -o openwrt-imagebuilder.tar.xz
-        tar -xf openwrt-imagebuilder.tar.xz
+        # دانلود فایل با پسوند صحیح جدید
+        curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.zst" -o openwrt-imagebuilder.tar.zst
+        
+        # استخراج فایل zst
+        tar --use-compress-program=zstd -xf openwrt-imagebuilder.tar.zst
         mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
 
     - name: Create Custom Settings File Directly
