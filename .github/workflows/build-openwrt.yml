@@ -14,7 +14,10 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y zstd
+        sudo apt-get install -y zstd wget
+        # دانلود ابزار رسمی apk-tools برای ساخت ایندکس مخزن جدید
+        wget -qO apk https://gitlab.alpinelinux.org/alpine/apk-tools/-/raw/master/src/apk?inline=false || true
+        chmod +x apk
 
     - name: Download OpenWrt Image Builder
       run: |
@@ -22,13 +25,20 @@ jobs:
         tar --use-compress-program=zstd -xf openwrt-imagebuilder.tar.zst
         mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
 
-    - name: Pre-download Passwall Packages for Offline Install
+    - name: Pre-download and Index Passwall APKs
       run: |
-        mkdir -p imagebuilder/packages
-        cd imagebuilder/packages
-        # دانلود مستقیم پکیج‌های اصلی پسوال ۲ و ریلیزهای آن برای معماری x86_64
-        wget --no-check-certificate https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2/luci-app-passwall2_git-24.341.56453-9a3d42b_all.apk || true
-        wget --no-check-certificate https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages/xray_1.8.24-1_x86_64.apk || true
+        mkdir -p imagebuilder/packages_local
+        cd imagebuilder/packages_local
+        
+        # ۱. دانلود پکیج‌های اصلی برای معماری x86_64
+        wget --no-check-certificate -q "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2/luci-app-passwall2_git-24.341.56453-9a3d42b_all.apk"
+        wget --no-check-certificate -q "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages/xray_1.8.24-1_x86_64.apk"
+        
+        # ۲. شبیه‌سازی ایندکس مخزن برای سیستم جدید apk (جایگزین ساختار قدیمی opkg)
+        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > ../repositories.d/local.list
+        cd ..
+        # اضافه کردن مسیر پوشه محلی به کامپایلر
+        sed -i 's|option packages_dir|# option packages_dir|g' include/target.mk || true
 
     - name: Create Custom Settings File Directly
       run: |
@@ -97,7 +107,7 @@ jobs:
         uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
         uci commit dhcp
 
-        # ۴. اضافه کردن مخازن برای آینده
+        # ۴. اضافه کردن آدرس مخازن جهت آپدیت‌های آینده
         mkdir -p /etc/apk/keys/
         wget --no-check-certificate -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
 
@@ -105,7 +115,7 @@ jobs:
         echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > /etc/apk/repositories.d/customfeeds.list
         echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> /etc/apk/repositories.d/customfeeds.list
 
-        # ۵. اسکریپت گسترش حافظه هارد به ۱۲۸ گیگابایت
+        # ۵. اسکریپت گسترش حافظه هارد به ۱۲۸ گیگابایت (اولین دستور در بدو ورود)
         if [ -b /dev/sda2 ]; then
             parted -s /dev/sda resizepart 2 100%
             resize2fs /dev/sda2
@@ -118,11 +128,11 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # اضافه کردن پکیج‌های محلی پسوال به فرآیند ساخت فریمور نهایی
-        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils luci-app-passwall2 xray" FILES="files"
+        # در این بخش فیدهای آنلاین پسوال را به سازنده معرفی می‌کنیم تا دانلود و تزریق کاملاً آفلاین در زمان بیلد انجام شود
+        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils --repository https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2 --repository https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages --allow-untrusted luci-app-passwall2 xray" FILES="files"
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenWrt-HP-t630-Custom-Full
+        name: OpenWrt-HP-t630-Custom-Full-Offline
         path: imagebuilder/bin/targets/x86/64/
