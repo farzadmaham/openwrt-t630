@@ -108,7 +108,7 @@ jobs:
         make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
 
     - name: Upload Firmware Artifact
-      uses: actions/artifact@v4
+      uses: actions/upload-artifact@v4
       with:
         name: OpenWrt-HP-t630-Custom
         path: imagebuilder/bin/targets/x86/64/
