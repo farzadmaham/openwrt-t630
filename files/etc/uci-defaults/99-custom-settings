@@ -60,6 +60,13 @@ uci add_list dhcp.@dnsmasq[0].rebind_domain='medu.ir'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='qmb.ir'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
 uci commit dhcp
+# اضافه کردن کلید و مخزن پسوال در اولین بوت سیستم
+mkdir -p /etc/apk/keys/
+wget -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
+
+mkdir -p /etc/apk/repositories.d/
+echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > /etc/apk/repositories.d/customfeeds.list
+echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> /etc/apk/repositories.d/customfeeds.list
 
 exit 0
 
