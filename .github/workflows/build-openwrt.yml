@@ -13,7 +13,6 @@ jobs:
 
     - name: Download OpenWrt Image Builder
       run: |
-        # استفاده از متد دانلود پایدار گیت‌هاب برای نسخه 25.12.4
         curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.xz" -o openwrt-imagebuilder.tar.xz
         tar -xf openwrt-imagebuilder.tar.xz
         mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
@@ -26,11 +25,11 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # اضافه شدن پکیج‌های درخواستی وای‌فای اینتل ۸۲۶۵ و یو‌اس‌بی تترینگ به دستور ساخت
+        # اینجا تمام پکیج‌های وای‌فای اینتل ۸۲۶۵ و درایورهای یو‌اس‌بی تترینگ به طور کامل گنجانده شده‌اند
         make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 wpad-openssl kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
         name: OpenWrt-HP-t630-Custom
-        path: imagebuilder/bin/targets/x86/64/*combined-ext4.img.gz
+        path: imagebuilder/bin/targets/x86/64/
