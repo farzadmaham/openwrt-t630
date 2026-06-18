@@ -41,14 +41,14 @@ uci set network.wan2.device='eth0.30'
 uci set network.wan2.proto='dhcp'
 uci commit network
 
-# ۲. تنظیمات تفکیک ترافیک ایران در Passwall2
+# ۲. تنظیمات تفکیک ترافیک ایران در Passwall2 (اصلاح ساختار لیست‌ها)
 for s in $(uci show passwall2 | sed -n 's/^passwall2\.\([^=]*\)=shunt_rules$/\1/p'); do uci delete passwall2.$s; done
 
 uci set passwall2.Iran='shunt_rules'
 uci set passwall2.Iran.remarks='Iran'
 uci set passwall2.Iran.network='tcp,udp'
-uci set passwall2.Iran.domain_list='geosite:category-ir
-ext:iran.dat:all'
+uci add_list passwall2.Iran.domain_list='geosite:category-ir'
+uci add_list passwall2.Iran.domain_list='ext:iran.dat:all'
 uci set passwall2.Iran.ip_list='geoip:ir'
 uci commit passwall2
 
@@ -61,7 +61,7 @@ uci add_list dhcp.@dnsmasq[0].rebind_domain='qmb.ir'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
 uci commit dhcp
 
-# ۴. اضافه کردن کلید و مخزن پسوال (اصلاح خط مخزن)
+# ۴. اضافه کردن کلید و مخزن پسوال
 mkdir -p /etc/apk/keys/
 wget --no-check-certificate -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
 
