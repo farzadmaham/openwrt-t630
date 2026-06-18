@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# ۱. تنظیمات شبکه و VLANها
+# ۱. تنظیمات VLANها برای مودم هوآوی
 uci -q delete network.vlan10
 uci -q delete network.vlan20
 uci -q delete network.vlan30
@@ -9,68 +9,41 @@ uci set network.vlan10=device
 uci set network.vlan10.type='8021q'
 uci set network.vlan10.ifname='eth0'
 uci set network.vlan10.vid='10'
-uci set network.vlan10.name='eth0.10'
 
 uci set network.vlan20=device
 uci set network.vlan20.type='8021q'
 uci set network.vlan20.ifname='eth0'
 uci set network.vlan20.vid='20'
-uci set network.vlan20.name='eth0.20'
 
 uci set network.vlan30=device
 uci set network.vlan30.type='8021q'
 uci set network.vlan30.ifname='eth0'
 uci set network.vlan30.vid='30'
-uci set network.vlan30.name='eth0.30'
 
-# تنظیم IP مخصوص نسخه 25.12
+# تنظیمات LAN و WAN
 uci set network.lan.device='eth0.20'
 uci set network.lan.proto='static'
-uci set network.lan.ipaddr='192.168.50.1/24'
+uci set network.lan.ipaddr='192.168.50.1'
+uci set network.lan.netmask='255.255.255.0'
 
-# تنظیم کانکشن PPPoE مودم هوآوی
 uci set network.wan=interface
 uci set network.wan.device='eth0.10'
 uci set network.wan.proto='pppoe'
 uci set network.wan.username='fholde5973501@tct4'
 uci set network.wan.password='54653397'
-uci set network.wan.ipv6='0'
-
-uci set network.wan2=interface
-uci set network.wan2.device='eth0.30'
-uci set network.wan2.proto='dhcp'
 uci commit network
 
-# ۲. تنظیمات تفکیک ترافیک ایران در Passwall2
-for s in $(uci show passwall2 | sed -n 's/^passwall2\.\([^=]*\)=shunt_rules$/\1/p'); do uci delete passwall2.$s; done
-
+# ۲. ایجاد رول تفکیک ترافیک ایران (Shunt Rule)
+uci delete passwall2.Iran 2>/dev/null
 uci set passwall2.Iran='shunt_rules'
 uci set passwall2.Iran.remarks='Iran'
-uci set passwall2.Iran.network='tcp,udp'
 uci add_list passwall2.Iran.domain_list='geosite:category-ir'
 uci add_list passwall2.Iran.domain_list='ext:iran.dat:all'
 uci set passwall2.Iran.ip_list='geoip:ir'
 uci commit passwall2
 
-# ۳. تنظیمات رفع امنیتی Rebind Attack
-uci add_list dhcp.@dnsmasq[0].rebind_domain='banksepah.ir'
-uci add_list dhcp.@dnsmasq[0].rebind_domain='ebanksepah.ir'
-uci add_list dhcp.@dnsmasq[0].rebind_domain='gov.ir'
-uci add_list dhcp.@dnsmasq[0].rebind_domain='medu.ir'
-uci add_list dhcp.@dnsmasq[0].rebind_domain='qmb.ir'
-uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
-uci commit dhcp
-
-# ۴. اضافه کردن مخازن برای آینده
-mkdir -p /etc/apk/keys/
-wget --no-check-certificate -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
-
-mkdir -p /etc/apk/repositories.d/
-echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > /etc/apk/repositories.d/customfeeds.list
-echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> /etc/apk/repositories.d/customfeeds.list
-
-# ۵. اسکریپت گسترش حافظه هارد به ۱۲۸ گیگابایت
-if [ -b /dev/sda2 ]; then
+# ۳. گسترش حافظه هارد
+if [ -b /dev/sda2 ]; then 
     parted -s /dev/sda resizepart 2 100%
     resize2fs /dev/sda2
 fi
