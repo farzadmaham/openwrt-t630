@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# ۱. تنظیمات شبکه و VLANها (اتصال به سوئیچ تی‌پی‌لینک)
+# ۱. تنظیمات شبکه و VLANها
 uci -q delete network.vlan10
 uci -q delete network.vlan20
 uci -q delete network.vlan30
@@ -23,7 +23,7 @@ uci set network.vlan30.ifname='eth0'
 uci set network.vlan30.vid='30'
 uci set network.vlan30.name='eth0.30'
 
-# تنظیم IP به صورت CIDR مخصوص نسخه 25.12.4
+# تنظیم IP به صورت CIDR مخصوص نسخه 25.12
 uci set network.lan.device='eth0.20'
 uci set network.lan.proto='static'
 uci set network.lan.ipaddr='192.168.50.1/24'
@@ -61,15 +61,15 @@ uci add_list dhcp.@dnsmasq[0].rebind_domain='qmb.ir'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
 uci commit dhcp
 
-# ۴. اضافه کردن کلید و مخزن پسوال در اولین بوت سیستم
+# ۴. اضافه کردن کلید و مخزن پسوال (اصلاح خط مخزن)
 mkdir -p /etc/apk/keys/
 wget --no-check-certificate -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
 
 mkdir -p /etc/apk/repositories.d/
 echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > /etc/apk/repositories.d/customfeeds.list
-echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> />> /etc/apk/repositories.d/customfeeds.list
+echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> /etc/apk/repositories.d/customfeeds.list
 
-# ۵. اسکریپت خودکار گسترش پارتیشن روت به کل فضای هارد ۱۲۸ گیگابایتی
+# ۵. اسکریپت گسترش حافظه هارد به ۱۲۸ گیگابایت
 if [ -b /dev/sda2 ]; then
     parted -s /dev/sda resizepart 2 100%
     resize2fs /dev/sda2
