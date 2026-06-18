@@ -6,125 +6,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install Dependencies
+    - name: Build Firmware
       run: |
-        sudo apt-get update
-        sudo apt-get install -y zstd wget
-
-    - name: Download OpenWrt Image Builder
-      run: |
-        curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.zst" -o openwrt-imagebuilder.tar.zst
-        tar --use-compress-program=zstd -xf openwrt-imagebuilder.tar.zst
-        mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
-
-    - name: Inject Passwall Repositories into Image Builder Config
-      run: |
-        # تزریق مستقیم آدرس مخازن پسوال به فایل اصلی مخازن کامپایلر
-        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> imagebuilder/repositories.conf
-        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" >> imagebuilder/repositories.conf
+        sudo apt-get update && sudo apt-get install -y zstd
+        curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.zst" -o ib.tar.zst
+        tar --use-compress-program=zstd -xf ib.tar.zst
+        cd openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64
         
-        # دانلود و قرار دادن کلید امنیتی مخزن در پوشه فایل‌های سفارشی روتر
-        mkdir -p imagebuilder/files/etc/apk/keys/
-        wget --no-check-certificate -qO imagebuilder/files/etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
-
-    - name: Create Custom Settings File Directly
-      run: |
-        mkdir -p imagebuilder/files/etc/uci-defaults
-        cat << 'EOF' > imagebuilder/files/etc/uci-defaults/99-custom-settings
-        #!/bin/sh
-
-        # ۱. تنظیمات شبکه و VLANها
-        uci -q delete network.vlan10
-        uci -q delete network.vlan20
-        uci -q delete network.vlan30
-
-        uci set network.vlan10=device
-        uci set network.vlan10.type='8021q'
-        uci set network.vlan10.ifname='eth0'
-        uci set network.vlan10.vid='10'
-        uci set network.vlan10.name='eth0.10'
-
-        uci set network.vlan20=device
-        uci set network.vlan20.type='8021q'
-        uci set network.vlan20.ifname='eth0'
-        uci set network.vlan20.vid='20'
-        uci set network.vlan20.name='eth0.20'
-
-        uci set network.vlan30=device
-        uci set network.vlan30.type='8021q'
-        uci set network.vlan30.ifname='eth0'
-        uci set network.vlan30.vid='30'
-        uci set network.vlan30.name='eth0.30'
-
-        # تنظیم IP مخصوص نسخه 25.12
-        uci set network.lan.device='eth0.20'
-        uci set network.lan.proto='static'
-        uci set network.lan.ipaddr='192.168.50.1/24'
-
-        # تنظیم کانکشن PPPoE مودم هوآوی
-        uci set network.wan=interface
-        uci set network.wan.device='eth0.10'
-        uci set network.wan.proto='pppoe'
-        uci set network.wan.username='fholde5973501@tct4'
-        uci set network.wan.password='54653397'
-        uci set network.wan.ipv6='0'
-
-        uci set network.wan2=interface
-        uci set network.wan2.device='eth0.30'
-        uci set network.wan2.proto='dhcp'
-        uci commit network
-
-        # ۲. تنظیمات تفکیک ترافیک ایران در Passwall2
-        for s in \$(uci show passwall2 | sed -n 's/^passwall2\.\([^=]*\)=shunt_rules\$/\1/p'); do uci delete passwall2.\$s; done
-
-        uci set passwall2.Iran='shunt_rules'
-        uci set passwall2.Iran.remarks='Iran'
-        uci set passwall2.Iran.network='tcp,udp'
-        uci add_list passwall2.Iran.domain_list='geosite:category-ir'
-        uci add_list passwall2.Iran.domain_list='ext:iran.dat:all'
-        uci set passwall2.Iran.ip_list='geoip:ir'
-        uci commit passwall2
-
-        # ۳. تنظیمات رفع امنیتی Rebind Attack
-        uci add_list dhcp.@dnsmasq[0].rebind_domain='banksepah.ir'
-        uci add_list dhcp.@dnsmasq[0].rebind_domain='ebanksepah.ir'
-        uci add_list dhcp.@dnsmasq[0].rebind_domain='gov.ir'
-        uci add_list dhcp.@dnsmasq[0].rebind_domain='medu.ir'
-        uci add_list dhcp.@dnsmasq[0].rebind_domain='qmb.ir'
-        uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
-        uci commit dhcp
-
-        # ۴. اضافه کردن آدرس مخازن جهت آپدیت‌های آینده روی روتر
-        mkdir -p /etc/apk/keys/
-        cp /etc/apk/keys/passwall.pem /etc/apk/keys/passwall.pem 2>/dev/null || wget --no-check-certificate -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
-
-        mkdir -p /etc/apk/repositories.d/
-        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > /etc/apk/repositories.d/customfeeds.list
-        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> /etc/apk/repositories.d/customfeeds.list
-
-        # ۵. اسکریپت گسترش حافظه هارد به ۱۲۸ گیگابایت
-        if [ -b /dev/sda2 ]; then
-            parted -s /dev/sda resizepart 2 100%
-            resize2fs /dev/sda2
-        fi
-
-        exit 0
-        EOF
-        chmod +x imagebuilder/files/etc/uci-defaults/99-custom-settings
-
-    - name: Compile Firmware
-      run: |
-        cd imagebuilder
-        # حالا پکیج‌ها بدون مشکل مستقیماً از فایل مخازن خوانده و نصب می‌شوند
-        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils luci-app-passwall2 xray" FILES="files"
-
-    - name: Upload Firmware Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: OpenWrt-HP-t630-Custom-Full-Final
-        path: imagebuilder/bin/targets/x86/64/
+        # تزریق مخازن جدید نسخه ۲۵.۱۲ (بسیار مهم)
+        echo "src/gz passwall_packages https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" >> repositories.conf
+        echo "src/gz passwall2 https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> repositories.conf
+        
+        # کامپایل ایمیج
+        make image PROFILE="generic" PACKAGES="dnsmasq-full luci-app-passwall2 xray" FILES="../files"
