@@ -21,11 +21,13 @@ jobs:
       run: |
         cd imagebuilder
         mkdir -p files/etc/apk/keys/
-        wget -O files/etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
+        # دانلود مستقیم کلید با استفاده از فلگ‌های کمکی برای اطمینان از صحت دانلود
+        wget -qO files/etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
         
+        # اصلاح دقیق آدرس فیدها بر اساس ساختار استاندارد نسخه 25.12
         mkdir -p repositories.d
-        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages/packages.adb" >> repositories.d/customfeeds.list
-        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2/packages.adb" >> repositories.d/customfeeds.list
+        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > repositories.d/customfeeds.list
+        echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> repositories.d/customfeeds.list
 
     - name: Copy Custom Files
       run: |
@@ -35,6 +37,7 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
+        # اضافه کردن ابزارهای لازم و پکیج‌های درخواستی
         make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl luci-app-passwall2 sing-box xray-core v2ray-geosite-ir parted resize2fs e2fsprogs fdisk" FILES="files"
 
     - name: Upload Firmware Artifact
