@@ -1,3 +1,49 @@
+name: Build Custom OpenWrt for HP t630
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zstd
+
+    - name: Download OpenWrt Image Builder
+      run: |
+        curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.zst" -o openwrt-imagebuilder.tar.zst
+        tar --use-compress-program=zstd -xf openwrt-imagebuilder.tar.zst
+        mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
+
+    - name: Pre-download Passwall Packages for Offline Install
+      run: |
+        mkdir -p imagebuilder/packages
+        cd imagebuilder/packages
+        # دانلود مستقیم پکیج‌های اصلی پسوال ۲ و ریلیزهای آن برای معماری x86_64
+        wget --no-check-certificate https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2/luci-app-passwall2_git-24.341.56453-9a3d42b_all.apk || true
+        wget --no-check-certificate https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages/xray_1.8.24-1_x86_64.apk || true
+
+    - name: Create Custom Settings File Directly
+      run: |
+        mkdir -p imagebuilder/files/etc/uci-defaults
+        cat << 'EOF' > imagebuilder/files/etc/uci-defaults/99-custom-settings
+        #!/bin/sh
+
+        # ۱. تنظیمات شبکه و VLANها
+        uci -q delete network.vlan10
+        uci -q delete network.vlan20
+        uci -q delete network.vlan30
+
+        uci set network.vlan10=device
+        uci set network.vlan10.type='8021q'
+        uci set network.vlan10.ifname='eth0'
         uci set network.vlan10.vid='10'
         uci set network.vlan10.name='eth0.10'
 
@@ -51,7 +97,7 @@
         uci add_list dhcp.@dnsmasq[0].rebind_domain='tamin.ir'
         uci commit dhcp
 
-        # ۴. اضافه کردن کلید و مخزن پسوال
+        # ۴. اضافه کردن مخازن برای آینده
         mkdir -p /etc/apk/keys/
         wget --no-check-certificate -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/openwrt-passwall-build/apk.pub
 
@@ -72,10 +118,11 @@
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
+        # اضافه کردن پکیج‌های محلی پسوال به فرآیند ساخت فریمور نهایی
+        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils luci-app-passwall2 xray" FILES="files"
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenWrt-HP-t630-Custom
+        name: OpenWrt-HP-t630-Custom-Full
         path: imagebuilder/bin/targets/x86/64/
