@@ -13,10 +13,9 @@ jobs:
 
     - name: Download OpenWrt Image Builder
       run: |
-        # اضافه کردن فلگ حذف بررسی SSL برای دور زدن ارور خروج 8
-        wget --no-check-certificate https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.xz
-        tar -xf openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.xz
-        mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
+        curl -L -k https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/openwrt-imagebuilder-23.05.5-x86-64.Linux-x86_64.tar.xz -o openwrt-imagebuilder.tar.xz
+        tar -xf openwrt-imagebuilder.tar.xz
+        mv openwrt-imagebuilder-23.05.5-x86-64.Linux-x86_64 imagebuilder
 
     - name: Copy Custom Files
       run: |
@@ -26,7 +25,6 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # حذف موقت پکیج‌های شخص ثالث از دستور بیلد اصلی برای پایداری کامپایل اولیه
         make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk" FILES="files"
 
     - name: Upload Firmware Artifact
