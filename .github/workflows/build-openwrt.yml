@@ -13,9 +13,10 @@ jobs:
 
     - name: Download OpenWrt Image Builder
       run: |
-        curl -L -k https://downloads.openwrt.org/releases/23.05.5/targets/x86/64/openwrt-imagebuilder-23.05.5-x86-64.Linux-x86_64.tar.xz -o openwrt-imagebuilder.tar.xz
+        # استفاده از متد دانلود پایدار گیت‌هاب برای نسخه 25.12.4
+        curl -L -k "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64.tar.xz" -o openwrt-imagebuilder.tar.xz
         tar -xf openwrt-imagebuilder.tar.xz
-        mv openwrt-imagebuilder-23.05.5-x86-64.Linux-x86_64 imagebuilder
+        mv openwrt-imagebuilder-25.12.4-x86-64.Linux-x86_64 imagebuilder
 
     - name: Copy Custom Files
       run: |
@@ -25,7 +26,8 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk" FILES="files"
+        # اضافه شدن پکیج‌های درخواستی وای‌فای اینتل ۸۲۶۵ و یو‌اس‌بی تترینگ به دستور ساخت
+        make image PROFILE="generic" PACKAGES="dnsmasq-full -dnsmasq kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 wpad-openssl kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
