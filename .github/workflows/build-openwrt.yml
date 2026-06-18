@@ -27,10 +27,8 @@ jobs:
     - name: Compile Firmware
       run: |
         cd imagebuilder
-        # آپدیت واقعی لیست پکیج‌های ایمیج‌بیلدر
-        make package/index
-        # اجرای بیلد نهایی
-        make image PROFILE="generic" PACKAGES="-dnsmasq dnsmasq-full kmod-nft-tproxy kmod-nft-socket wget-ssl parted resize2fs e2fsprogs fdisk kmod-iwlwifi iwlwifi-firmware-iwl8265 kmod-usb-net kmod-usb-net-rndis kmod-usb-net-cdc-ether usbutils" FILES="files"
+        # تست با حداقل پکیج‌ها برای پیدا کردن ریشه خطا
+        make image PROFILE="generic" PACKAGES="-dnsmasq dnsmasq-full wget-ssl parted resize2fs e2fsprogs fdisk" FILES="files"
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
