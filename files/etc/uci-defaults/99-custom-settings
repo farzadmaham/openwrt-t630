@@ -67,6 +67,13 @@ wget -qO /etc/apk/keys/passwall.pem https://master.dl.sourceforge.net/project/op
 mkdir -p /etc/apk/repositories.d/
 echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall_packages" > /etc/apk/repositories.d/customfeeds.list
 echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-25.12/x86_64/passwall2" >> /etc/apk/repositories.d/customfeeds.list
-
+# اسکریپت خودکار گسترش پارتیشن روت به کل فضای هارد ۱۲۸ گیگابایتی
+if [ -b /dev/sda2 ]; then
+    # بزرگ کردن لوجیکال پارتیشن دوم تا آخرین ظرفیت هارد
+    parted -s /dev/sda resizepart 2 100%
+    
+    # همگام‌سازی و اعمال تغییرات روی فایل‌سیستم ext4
+    resize2fs /dev/sda2
+fi
 exit 0
 
